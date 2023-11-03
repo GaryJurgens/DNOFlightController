@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding ="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+  <PropertyGroup Label="Globals" >
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{94179a8f-c423-4555-9100-86dd123946a5}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\convacc.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convang.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convangacc.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convangvel.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convdensity.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convforce.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convlength.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convmass.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convpres.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convtemp.cpp" />
+<ClCompile Include="$(MSBuildThisFileDirectory)src\convvel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\constants.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convacc.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convang.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convangacc.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convangvel.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convdensity.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convforce.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convlength.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convmass.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convpres.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convtemp.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\convvel.h" />
+<ClInclude Include="$(MSBuildThisFileDirectory)src\units.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="$(MSBuildThisFileDirectory)CMakeLists.txt" />
+<Text Include="$(MSBuildThisFileDirectory)keywords.txt" />
+<Text Include="$(MSBuildThisFileDirectory)library.properties" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)CHANGELOG.md" />
+<None Include="$(MSBuildThisFileDirectory)CONTRIBUTING.md" />
+<None Include="$(MSBuildThisFileDirectory)LICENSE.md" />
+<None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
+</Project>
