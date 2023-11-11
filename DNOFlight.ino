@@ -6,21 +6,46 @@
 
 // the setup function runs once when you press reset or power the board
 
+
+
+
+
+
+#include <PID_v1.h>
+#include <Wire.h>
+#include <units.h>
+#include <mpu9250.h>
+#include <eigen.h>
 #define SDA_PIN 32
 #define SCL_PIN 33
-
+// Define rate limiter parameters (adjust as needed)
+float rateLimiterAlpha = 0.02; // Smoothing factor (0 < alpha < 1)
 // motor Pins
 const int FRONT_LEFT_PIN = 15, FRONT_RIGHT_PIN = 17, BACK_LEFT_PIN = 4, BACK_RIGHT_PIN = 16;
 // Constants for the ESC
-const int ESC_FREQ = 50; // ESCs usually use a frequency of 50Hz
-const int ESC_RESOLUTION = 16; // 16-bit resolution
-const int minDuty = 3276; // Minimum duty cycle for ESC (usually around 1ms pulse)
-const int maxDuty = 6553; // Maximum duty cycle for ESC (usually around 2ms pulse)
+// Constants for LEDC
+const int LEDC_BASE_FREQ = 100; // Use 300Hz for the desired PWM frequency
+const int LEDC_TIMER_BIT = 16; // Using 16-bit timers (you can increase this if supported)
+const int MAX_DUTY_CYCLE = (1 << LEDC_TIMER_BIT) - 1; // Maximum duty cycle based on timer bit resolution
 
-const int ChFrontRight = 0;
-const int ChFrontLeft = 1;
-const int ChBackRight = 4;
-const int ChBackLeft = 5;
+// Constants for PWM signal
+const float MIN_PULSE_WIDTH_MS = 1.3; // Minimum pulse width in milliseconds (adjust as needed)
+const float MAX_PULSE_WIDTH_MS = 1.8; // Maximum pulse width in milliseconds (adjust as needed)
+
+// For a 300Hz frequency, the period is approximately 3.33 milliseconds (1/LEDC_BASE_FREQ * 1000).
+// To calculate the duty cycle:
+const float PERIOD_MS = 1000.0 / LEDC_BASE_FREQ; // Period of PWM signal in mill
+
+// Calculate duty cycle counts for adjusted pulse widths
+const int minDuty = (int)((MIN_PULSE_WIDTH_MS / PERIOD_MS) * MAX_DUTY_CYCLE);
+const int maxDuty = (int)((MAX_PULSE_WIDTH_MS / PERIOD_MS) * MAX_DUTY_CYCLE);
+// Assign channels to your motors
+const int FRONT_LEFT_CHANNEL = 1;
+const int FRONT_RIGHT_CHANNEL = 2;
+const int BACK_LEFT_CHANNEL = 3;
+const int BACK_RIGHT_CHANNEL = 4;
+
+//Servo RightFrontMotor, LeftFrontMotor, RightBackMotor, LeftBackMotor;
 
 //radio Channels
 
@@ -52,80 +77,149 @@ bfs::Mpu9250 imu;
 
 /// Tuning parameters
 
-float RollKp = 1.0; // Proportional gain
-float RollKi = 0.1; // Integral gain
-float RollKd = 0.05; // Derivative gain
+// Define global variables
+int currentMotorSpeed = 0;      // Current speed of the motor
+int targetMotorSpeed = 0;       // Target speed to reach
+unsigned long lastUpdate = 0;   // Last update time
+int updateInterval = 10;        // Time interval for speed updates in milliseconds
+int rampStep = 40;			   // Step size for ramping up or down
 
-float Rollintegral = 0;
-float Rollprevious_error = 0;
+// Define global variables
+int PitchcurrentMotorSpeed = 0;      // Current speed of the motor
+int PitchtargetMotorSpeed = 0;       // Target speed to reach
+unsigned long PitchlastUpdate = 0;   // Last update time
+int PitchupdateInterval = 10;        // Time interval for speed updates in milliseconds
+int PitchrampStep = 40;			   // Step size for ramping up or down
 
-// pitch tuning parameters
+
 
 float PitchKp = 1.0; // Proportional gain
-float PitchKi = 0.1; // Integral gain
-float PitchKd = 0.05; // Derivative gain
+float PitchKi = 1; // Integral gain
+float PitchKd = 0.0; // Derivative gain
 
 float Pitchintegral = 0;
 float Pitchprevious_error = 0;
 
+String RollDirection = "center"; 
+String PitchDirection = "center";
 
 
 int GetRollFromTransmitter()
 {
 	int pwmValue = pulseIn(RADIO_INPUT_PIN_CH1, HIGH, 25000);
-
+	int thrust = 0;
 	Serial.println("Roll PWM: " + String(pwmValue));
 
-	if (abs(pwmValue - CH1_Roll_Center) <= deadzone) {
+	if (pwmValue < CH1_Roll_Center)
+	{
+		RollDirection = "left";
+		Serial.println("Roll Direction Left");
+
+	}
+	else if (pwmValue > CH1_Roll_Center)
+	{
+		RollDirection = "right";
+		Serial.println("Roll Direction Right");
+	}
+	else
+	{
+		RollDirection = "center";
+	}
+
+	if (abs(pwmValue - CH1_Roll_Center) <= 10) {
 		// Get the current roll angle or rate
 		float rollError = imu.gyro_x_radps() * 180 / PI; // Error in degrees
 
 		// Proportional term
-		float Pout = RollKp * rollError;
+		//float Pout = RollKp * rollError;
 
 		// Integral term
-		Rollintegral += rollError;
-		float Iout = RollKi * Rollintegral;
+		//Rollintegral += rollError;
+		//float Iout = RollKi * Rollintegral;
 
 		// Derivative term
-		float derivative = rollError - Rollprevious_error;
-		float Dout = RollKd * derivative;
+		//float derivative = rollError - Rollprevious_error;
+		//float Dout = RollKd * derivative;
 
 		// Calculate total output
-		int output = Pout + Iout + Dout;
+		//int output = Pout + Iout + Dout;
+
+		Serial.println("Roll Error");
+		//Serial.println(output);
+
+		//if (output < 0)
+		//{
+		//	RollDirection = "left";
+		//}
+		//else if (output > 0)
+		//{
+		//	RollDirection = "right";
+		//}
+		//else
+		//{
+		RollDirection = "center";
+		//}
 
 		// Restrict to max/min
-		int correctedThrottle = constrain(CurrentThrottle - output, 0, 100);
+		//int correctedThrottle = constrain(CurrentThrottle - output, 0, 100);
 
 		// Save error for next loop
-		Rollprevious_error = rollError;
+		//Rollprevious_error = rollError;
 
 		Serial.println("Roll Corrected Throttle");
-		Serial.println(correctedThrottle);
-		return correctedThrottle;
+		//Serial.println(correctedThrottle);
+		//return correctedThrottle;
 	}
 	else
 	{
-		// 10% of current throttle
-		int TenPercent = CurrentThrottle / 10;
-		int Lowend = CurrentThrottle - TenPercent;
-		int Highend = CurrentThrottle + TenPercent;
+		// Manual control
 
-		int thrust = map(pwmValue, CH1_Roll_Left, CH1_Roll_Right, Lowend, Highend);
+		
+		if (RollDirection == "left")
+		{
+			// Map low pwmValue to high thrust when rolling left
+			thrust = map(pwmValue, CH1_Roll_Left, CH1_Roll_Center, 100, 0);
+		}
+		else if (RollDirection == "right")
+		{
+			// Map low pwmValue to high thrust when rolling right
+			thrust = map(pwmValue, CH1_Roll_Left, CH1_Roll_Right, 0, 100);
+		}
+		
 
+	}
 		int constrained = constrain(thrust, 0, 100);
 		Serial.println("Roll Manual Throttle");
 		Serial.println(constrained);
 		return constrained;
-	}
+	
+
 }
 int GetPitchFromTransmitter()
 {
 	int pwmValue = pulseIn(RADIO_INPUT_PIN_CH2, HIGH, 25000);
 	Serial.println("Pitch PWM: " + String(pwmValue));
 
+	int thrust = 0; // Correct the variable name from "thurst" to "thrust"
+
+	if (pwmValue < CH2_Pitch_Center)
+	{
+		PitchDirection = "forward";
+		Serial.println("Pitch Direction Forward");
+	}
+	else if (pwmValue > CH2_Pitch_Center)
+	{
+		PitchDirection = "backward";
+		Serial.println("Pitch Direction Backward");
+	}
+	else
+	{
+		PitchDirection = "center";
+	}
+
 	// Check if the stick is within the deadzone around the center
-	if (abs(pwmValue - CH2_Pitch_Center) <= PitchDeadzone) {
+	if (abs(pwmValue - CH2_Pitch_Center) <= 10)
+	{
 		// Automatic pitch correction
 		float PitchError = imu.gyro_y_radps() * 180 / PI; // Error in degrees
 
@@ -143,26 +237,46 @@ int GetPitchFromTransmitter()
 		// Calculate total output
 		int output = Pout + Iout + Dout;
 
-		// Restrict to max/min
-		int correctedThrottle = constrain(CurrentThrottle - output, 0, 100);
+		if (output < 0)
+		{
+			PitchDirection = "forward";
+		}
+		else if (output > 0)
+		{
+			PitchDirection = "backward";
+		}
+		else
+		{
+			PitchDirection = "center";
+		}
 
-		// Save error for next loop
+		// Map output to thrust
+		thrust = map(output, -100, 100, 0, 100); // Map output to thrust in the range [0, 100]
+
+		// Save error for the next loop
 		Pitchprevious_error = PitchError;
 
 		Serial.println("Pitch Corrected Throttle");
-		Serial.println(correctedThrottle);
-		return correctedThrottle;
+		Serial.println(thrust);
+		return thrust;
 	}
-	else {
+	else
+	{
 		// Manual control
-		int TenPercent = CurrentThrottle / 10;
-		int Lowend = CurrentThrottle - TenPercent;
-		int Highend = CurrentThrottle + TenPercent;
+		if (PitchDirection == "forward")
+		{
+			// Map low pwmValue to high thrust when pitching forward
+			thrust = map(pwmValue, CH2_Pitch_Forward, CH2_Pitch_Backward, 0, CurrentThrottle);
+		}
+		else if (PitchDirection == "backward")
+		{
+			// Map low pwmValue to high thrust when pitching backward
+			thrust = map(pwmValue, CH2_Pitch_Forward, CH2_Pitch_Backward, CurrentThrottle, 0);
+		}
 
-		int thrust = map(pwmValue, CH2_Pitch_Forward, CH2_Pitch_Backward, Lowend, Highend);
 		Serial.println("Pitch Manual Throttle");
 		Serial.println(thrust);
-		return constrain(thrust, 0, 100);
+		return thrust;
 	}
 }
 int GetThrottleFromTransmitter()
@@ -189,94 +303,115 @@ int GetYawFromTransmitter()
 
 void SetPitchMotorSpeeds(int Speed)
 {
-	// set all motors to the same speed
+	Serial.println("pitch speed");
+	Serial.println(Speed);
 
-	setESCPower(CurrentThrottle, ChFrontLeft);
-	setESCPower(CurrentThrottle, ChFrontRight);
-	setESCPower(CurrentThrottle, ChBackLeft);
-	setESCPower(CurrentThrottle, ChBackRight);
-
-	// 10% of current throttle
-	int TenPercent = CurrentThrottle / 20;
-
-	if (Speed < TenPercent / 2)
+	if (PitchDirection == "forward")
 	{
-		setESCPower(Speed, ChFrontLeft);
-		setESCPower(Speed, ChBackRight);
+		Serial.println("pitch forwards");
+		setESCPower(Speed, BACK_LEFT_CHANNEL);
+		setESCPower(Speed, BACK_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_RIGHT_CHANNEL);
 	}
-	else
+	else if (PitchDirection == "backward")
 	{
-		setESCPower(Speed, ChFrontRight);
-		setESCPower(Speed, ChBackLeft);
+		Serial.println("pitch backwards");
+		setESCPower(Speed, FRONT_LEFT_CHANNEL);
+		setESCPower(Speed, FRONT_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_RIGHT_CHANNEL);
 	}
+	else if (PitchDirection == "center")
+	{
+		Serial.println("Pitch - center");
+		setESCPower(CurrentThrottle, FRONT_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_RIGHT_CHANNEL);
+	}
+}
+
+void SetMotorThrottle()
+{
+setESCPower(CurrentThrottle, BACK_LEFT_CHANNEL);
+setESCPower(CurrentThrottle, BACK_RIGHT_CHANNEL);
+setESCPower(CurrentThrottle, FRONT_RIGHT_CHANNEL);
+setESCPower(CurrentThrottle, FRONT_LEFT_CHANNEL);
+
 }
 
 void SetRollMotorSpeeds(int Speed)
 {
-	// set all motors to the same speed
-	setESCPower(CurrentThrottle, ChFrontLeft);
-	setESCPower(CurrentThrottle, ChFrontRight);
-	setESCPower(CurrentThrottle, ChBackLeft);
-	setESCPower(CurrentThrottle, ChBackRight);
+	Serial.println("roll speed");
+	Serial.println(Speed);
 
-	// 10% of current throttle
-	int TenPercent = CurrentThrottle / 20;
+	
 
-	if (Speed < TenPercent / 2)
+	if (RollDirection == "left")
 	{
-		setESCPower(Speed, ChFrontRight);
-		setESCPower(Speed, ChBackLeft);
+		Serial.println("Roll - Left");
+		setESCPower(Speed, BACK_LEFT_CHANNEL);
+		setESCPower(Speed, FRONT_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_RIGHT_CHANNEL);
 	}
-	else
+	else if (RollDirection == "right")
 	{
-		setESCPower(Speed, ChFrontLeft);
-		setESCPower(Speed, ChBackRight);
+		Serial.println("Roll - Right");
+		setESCPower(Speed, BACK_RIGHT_CHANNEL);
+		setESCPower(Speed, FRONT_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_LEFT_CHANNEL);
+	}
+	else if (RollDirection == "center")
+	{
+		Serial.println("Roll - Center");
+		setESCPower(CurrentThrottle, FRONT_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, FRONT_RIGHT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_LEFT_CHANNEL);
+		setESCPower(CurrentThrottle, BACK_RIGHT_CHANNEL);
 	}
 }
 
 void SetYawMotorSpeeds(int Speed)
 {
 	// set all motors to the same speed
-	setESCPower(CurrentThrottle, ChFrontLeft);
-	setESCPower(CurrentThrottle, ChFrontRight);
-	setESCPower(CurrentThrottle, ChBackLeft);
-	setESCPower(CurrentThrottle, ChBackRight);
+	
 
 	// 10% of current throttle
-	int TenPercent = CurrentThrottle / 20;
-	if (Speed < TenPercent / 2)
+	int reducedSpeed = CurrentThrottle / 20;
+	if (Speed < reducedSpeed / 2)
 	{
-		setESCPower(Speed, ChFrontLeft);
-		setESCPower(Speed, ChBackRight);
+		//setESCPower(reducedSpeed, LeftFrontMotor);
+		//setESCPower(reducedSpeed, RightBackMotor);
 	}
 	else
 	{
-		setESCPower(Speed, ChFrontRight);
-		setESCPower(Speed, ChBackLeft);
+		//setESCPower(Speed, RightFrontMotor);
+		//setESCPower(Speed, LeftBackMotor);
 	}
 }
 
-void SetMotorSpeed(int motor, int speed)
-{
-	ledcWrite(motor, speed);
-}
+
 // Function to calibrate one ESC
-void calibrateESC(int LedcMotorChannel) {
-	// Send max throttle
-	setESCPower(0, LedcMotorChannel);
-	delay(500);
-	setESCPower(100, LedcMotorChannel); // 255 for 8-bit resolution (full throttle)
-	Serial.println("Set to max throttle for calibration. Connect the battery now. Wait for beeps.");
-	delay(2000); // Wait 5 seconds, adjust timing as needed
+void calibrateESC(int channel) {
 
-	// Send min throttle
-	setESCPower(0, LedcMotorChannel); // 0 for min throttle
-	Serial.println("Set to min throttle. Wait for confirmation beeps.");
-	delay(2000); // Wait for confirmation beeps, adjust timing as needed
+	
 
-	// Calibration done
-	Serial.println("ESC Calibration done.");
+	// Set the speed to 100
+	setESCPower(100, channel);
+
+	// Wait for 2 seconds
+	delay(3000);
+
+	// Set the speed to 0
+	setESCPower(0, channel);
+
+	// Wait for 2 seconds
+	delay(3000);
 }
+
 void initSensors() {
 	Wire.begin(SDA_PIN, SCL_PIN);
 	Wire.setClock(400000);
@@ -294,8 +429,12 @@ void initSensors() {
 }
 // Function to set the speed of the ESC
 void setESCPower(int speed, int channel) {
-	int dutyCycle = map(speed, 0, 100, minDuty, maxDuty);
-	ledcWrite(channel, dutyCycle);
+
+	// Map the speed from (0-100) to (minDuty-maxDuty)
+	int duty = map(speed, 0, 100, minDuty, maxDuty);
+	duty = constrain(duty, minDuty, maxDuty);
+	ledcWrite(channel, duty);
+
 }
 void updateIMUData() {
 	imu.Read();
@@ -318,39 +457,125 @@ void setup()
 	pinMode(RADIO_INPUT_PIN_CH3, INPUT);
 	pinMode(RADIO_INPUT_PIN_CH4, INPUT);
 
-	// Attach the ESC signal pin to the LEDC
-	ledcSetup(ChBackLeft, ESC_FREQ, ESC_RESOLUTION);
-	ledcSetup(ChBackRight, ESC_FREQ, ESC_RESOLUTION);
-	ledcSetup(ChFrontLeft, ESC_FREQ, ESC_RESOLUTION);
-	ledcSetup(ChFrontRight, ESC_FREQ, ESC_RESOLUTION);
+	pinMode(FRONT_LEFT_PIN, OUTPUT);
+pinMode(FRONT_RIGHT_PIN, OUTPUT);
+pinMode(BACK_LEFT_PIN, OUTPUT);
+pinMode(BACK_RIGHT_PIN, OUTPUT);
 
-	// attach the pins to the Ledc Chnnels
+// Setup timer and channel for each motor
+ledcSetup(FRONT_LEFT_CHANNEL, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+ledcSetup(FRONT_RIGHT_CHANNEL, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+ledcSetup(BACK_LEFT_CHANNEL, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+ledcSetup(BACK_RIGHT_CHANNEL, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
 
-	ledcAttachPin(FRONT_RIGHT_PIN, ChFrontRight);
-	ledcAttachPin(FRONT_LEFT_PIN, ChFrontLeft);
-	ledcAttachPin(BACK_RIGHT_PIN, ChBackRight);
-	ledcAttachPin(BACK_LEFT_PIN, ChBackLeft);
-	delay(1000); // to allow the ESC to initialize
-	calibrateESC(ChFrontRight);
-	calibrateESC(ChFrontLeft);
-	calibrateESC(ChBackRight);
-	calibrateESC(ChBackLeft);
+// Attach the channel to the GPIO to be controlled
+ledcAttachPin(FRONT_LEFT_PIN, FRONT_LEFT_CHANNEL);
+ledcAttachPin(FRONT_RIGHT_PIN, FRONT_RIGHT_CHANNEL);
+ledcAttachPin(BACK_LEFT_PIN, BACK_LEFT_CHANNEL);
+ledcAttachPin(BACK_RIGHT_PIN, BACK_RIGHT_CHANNEL);
+	
+	calibrateESC(FRONT_LEFT_CHANNEL);
+	calibrateESC(FRONT_RIGHT_CHANNEL);
+	calibrateESC(BACK_LEFT_CHANNEL);
+	calibrateESC(BACK_RIGHT_CHANNEL);
+	delay(2000);
 
-	initSensors();
+	
+
+	//initSensors();
 }
 
 // Add the main program code into the continuous loop() function
-void loop()
-{
-	updateIMUData();
+void loop() {
 
+	
+
+	Serial.println("Testing Motors");
+
+	//calibrateESC(LeftBackMotor);
+	//setESCPower(50, BACK_LEFT_CHANNEL);
+	
+	//delay(2000);  // short delay to allow the ESC to recognize the signal
+
+	Serial.println("Right Back Motor should be running");
+
+	// Once confirmed, you can uncomment the next line, and so on.
+	
 	CurrentThrottle = GetThrottleFromTransmitter();
+	int rollspeed = SmoothThrottleRollAdjustment(GetRollFromTransmitter());
+	int pitchspeed = SmoothThrottlePitchAdjustment(GetPitchFromTransmitter());
+	if (rollspeed > 0)
+	{
+		SetRollMotorSpeeds(rollspeed);
+	}
+	else if(pitchspeed > 0)
+	{ 
+		SetPitchMotorSpeeds(pitchspeed);
+	}
+	else
+	{
+		SetMotorThrottle();
+	}
 
-	int Roll = GetRollFromTransmitter();
-	int Pitch = GetPitchFromTransmitter();
-	int Yaw = GetYawFromTransmitter();
 
-	SetPitchMotorSpeeds(Pitch);
-	SetRollMotorSpeeds(Roll);
-	SetYawMotorSpeeds(Yaw);
+	
+
+	//delay(2000);
+
+	// Add more as you confirm each one works.
 }
+
+
+
+int SmoothThrottleRollAdjustment(int thrustvalue)
+{
+   targetMotorSpeed = thrustvalue;
+ unsigned long currentTime = millis();
+    if (currentTime - lastUpdate > updateInterval) {
+        lastUpdate = currentTime;
+
+        if (currentMotorSpeed < targetMotorSpeed) {
+            currentMotorSpeed += rampStep; // Increment speed
+            if (currentMotorSpeed > targetMotorSpeed) {
+                currentMotorSpeed = targetMotorSpeed; // Avoid overshooting
+            }
+        } else if (currentMotorSpeed > targetMotorSpeed) {
+            currentMotorSpeed -= rampStep; // Decrement speed
+            if (currentMotorSpeed < targetMotorSpeed) {
+                currentMotorSpeed = targetMotorSpeed; // Avoid undershooting
+            }
+        }
+
+        // Set motor speed
+		return currentMotorSpeed; // Replace with your motor control function
+    }
+	
+}
+
+int SmoothThrottlePitchAdjustment(int thrustvalue)
+{
+	PitchtargetMotorSpeed = thrustvalue;
+	unsigned long currentTime = millis();
+	if (currentTime - PitchlastUpdate > PitchupdateInterval) {
+		PitchlastUpdate = currentTime;
+
+		if (PitchcurrentMotorSpeed < PitchtargetMotorSpeed) {
+			PitchcurrentMotorSpeed += PitchrampStep; // Increment speed
+			if (PitchcurrentMotorSpeed > PitchtargetMotorSpeed) {
+				PitchcurrentMotorSpeed = PitchtargetMotorSpeed; // Avoid overshooting
+			}
+		}
+		else if (PitchcurrentMotorSpeed > PitchtargetMotorSpeed) {
+			PitchcurrentMotorSpeed -= PitchrampStep; // Decrement speed
+			if (PitchcurrentMotorSpeed < PitchtargetMotorSpeed) {
+				PitchcurrentMotorSpeed = PitchtargetMotorSpeed; // Avoid undershooting
+			}
+		}
+
+		// Set motor speed
+		return PitchcurrentMotorSpeed; // Replace with your motor control function
+	}
+
+}
+
+

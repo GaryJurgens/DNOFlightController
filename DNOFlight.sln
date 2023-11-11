@@ -13,6 +13,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Bolder_Flight_Systems_Unit_
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Bolder_Flight_Systems_MPU9250-5.6.0", "Libraries\Bolder_Flight_Systems_MPU9250\5.6.0\Bolder_Flight_Systems_MPU9250\Bolder_Flight_Systems_MPU9250-5.6.0.vcxitems", "{CB858288-4F6E-4EB1-98BF-247E411AD820}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Arduino_BuiltIn-1.0.0", "Libraries\Arduino_BuiltIn\1.0.0\Arduino_BuiltIn\Arduino_BuiltIn-1.0.0.vcxitems", "{19F54BE3-5CF5-429C-81E2-458049393B46}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PID-1.2.0", "Libraries\PID\1.2.0\PID\PID-1.2.0.vcxitems", "{73BB9009-A8E5-4C5D-A9CE-7816D73EC888}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -57,11 +61,15 @@ Global
 		SolutionGuid = {82DA8797-8769-4474-9551-D030CC4C9C2A}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Libraries\Arduino_BuiltIn\1.0.0\Arduino_BuiltIn\Arduino_BuiltIn-1.0.0.vcxitems*{19f54be3-5cf5-429c-81e2-458049393b46}*SharedItemsImports = 9
 		Libraries\Wire\2.0.0\Wire\Wire-2.0.0.vcxitems*{2147457f-ad03-471a-ac9e-c4bdb7559e32}*SharedItemsImports = 9
+		Libraries\Arduino_BuiltIn\1.0.0\Arduino_BuiltIn\Arduino_BuiltIn-1.0.0.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
 		Libraries\Bolder_Flight_Systems_Eigen\3.0.2\Bolder_Flight_Systems_Eigen\Bolder_Flight_Systems_Eigen-3.0.2.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
 		Libraries\Bolder_Flight_Systems_MPU9250\5.6.0\Bolder_Flight_Systems_MPU9250\Bolder_Flight_Systems_MPU9250-5.6.0.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
 		Libraries\Bolder_Flight_Systems_Unit_Conversions\5.0.0\Bolder_Flight_Systems_Unit_Conversions\Bolder_Flight_Systems_Unit_Conversions-5.0.0.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
+		Libraries\PID\1.2.0\PID\PID-1.2.0.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
 		Libraries\Wire\2.0.0\Wire\Wire-2.0.0.vcxitems*{40c0de3e-f899-440f-8f87-acaa67ce4ac4}*SharedItemsImports = 4
+		Libraries\PID\1.2.0\PID\PID-1.2.0.vcxitems*{73bb9009-a8e5-4c5d-a9ce-7816d73ec888}*SharedItemsImports = 9
 		Libraries\Bolder_Flight_Systems_Unit_Conversions\5.0.0\Bolder_Flight_Systems_Unit_Conversions\Bolder_Flight_Systems_Unit_Conversions-5.0.0.vcxitems*{94179a8f-c423-4555-9100-86dd123946a5}*SharedItemsImports = 9
 		Libraries\Bolder_Flight_Systems_MPU9250\5.6.0\Bolder_Flight_Systems_MPU9250\Bolder_Flight_Systems_MPU9250-5.6.0.vcxitems*{cb858288-4f6e-4eb1-98bf-247e411ad820}*SharedItemsImports = 9
 		Libraries\Bolder_Flight_Systems_Eigen\3.0.2\Bolder_Flight_Systems_Eigen\Bolder_Flight_Systems_Eigen-3.0.2.vcxitems*{d5ac4352-c1ed-4f4a-9a20-ac1b884367eb}*SharedItemsImports = 9
