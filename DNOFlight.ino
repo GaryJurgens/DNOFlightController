@@ -492,30 +492,38 @@ void loop() {
 
 	Serial.println("Testing Motors");
 
-	//calibrateESC(LeftBackMotor);
-	//setESCPower(50, BACK_LEFT_CHANNEL);
 	
-	//delay(2000);  // short delay to allow the ESC to recognize the signal
 
 	Serial.println("Right Back Motor should be running");
 
-	// Once confirmed, you can uncomment the next line, and so on.
+	
 	
 	CurrentThrottle = GetThrottleFromTransmitter();
 	int rollspeed = SmoothThrottleRollAdjustment(GetRollFromTransmitter());
 	int pitchspeed = SmoothThrottlePitchAdjustment(GetPitchFromTransmitter());
+
+	rollspeed = SmoothThrottleRollAdjustment(GetRollFromTransmitter());
 	if (rollspeed > 0)
 	{
-		SetRollMotorSpeeds(rollspeed);
-	}
-	else if(pitchspeed > 0)
-	{ 
-		SetPitchMotorSpeeds(pitchspeed);
-	}
-	else
-	{
+		while (RollDirection != "center")
+		{
+			rollspeed = SmoothThrottleRollAdjustment(GetRollFromTransmitter());
+			SetRollMotorSpeeds(rollspeed);
+		}
 		SetMotorThrottle();
 	}
+	else if(pitchspeed > 0)
+	{
+		while (PitchDirection != "center")
+		{
+			pitchspeed = SmoothThrottlePitchAdjustment(GetPitchFromTransmitter());
+			SetPitchMotorSpeeds(pitchspeed);
+		}
+		SetMotorThrottle();
+	}
+	
+
+	
 
 
 	
